@@ -8,7 +8,7 @@
 #  - use 'make -f Makefile.win' to build for Windows
 #  - use 'make MSVC=1 -f Makefile.win' to build for Windows with OCaml/MSVC
 #
-.SUFFIXES : .ml .mli .cmo .cmi .cmx .mll .mly
+.SUFFIXES : .ml .mli .cmo .cmi .cmx .mly
 
 INSTALL_DIR=$(DESTDIR)/usr
 INSTALL_BIN_DIR=$(INSTALL_DIR)/bin
@@ -29,7 +29,7 @@ STATICLINK?=0
 
 HAXE_DIRECTORIES=compiler context generators generators/gencommon macro filters optimization syntax typing display
 EXTLIB_LIBS=extlib extc neko javalib ziplib swflib xml-light ttflib ilib objsize pcre
-FINDLIB_LIBS=unix str threads
+FINDLIB_LIBS=unix str threads sedlex
 
 # Includes, packages and compiler
 
@@ -119,10 +119,10 @@ build_pass_1:
 
 build_pass_2:
 	printf MODULES= > Makefile.modules
-	ocamlfind ocamldep -sort -slash $(HAXE_INCLUDES) $(FINDLIB_PACKAGES) $(MODULES) | sed -e "s/\.ml//g" >> Makefile.modules
+	ocamlfind ocamldep -sort -slash $(HAXE_INCLUDES) $(MODULES) | sed -e "s/\.ml//g" >> Makefile.modules
 
 build_pass_3:
-	ocamlfind ocamldep -slash -native $(HAXE_INCLUDES) $(FINDLIB_PACKAGES) $(MODULES:%=%.ml) > Makefile.dependencies
+	ocamlfind ocamldep -slash -native $(HAXE_INCLUDES) $(MODULES:%=%.ml) > Makefile.dependencies
 
 build_pass_4: $(MODULES:%=%.$(MODULE_EXT))
 	$(COMPILER) -linkpkg -o $(OUTPUT) $(NATIVE_LIBS) $(NATIVE_LIB_FLAG) $(LFLAGS) $(FINDLIB_PACKAGES) $(EXTLIB_INCLUDES) $(EXTLIB_LIBS:=.$(LIB_EXT)) $(MODULES:%=%.$(MODULE_EXT))
