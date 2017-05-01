@@ -1353,8 +1353,6 @@ let generate con =
 
 	ArrayDeclSynf.configure gen native_arr_cl change_param_type;
 
-	DefaultArguments.configure gen;
-
 	let mkdir dir = if not (Sys.file_exists dir) then Unix.mkdir dir 0o755 in
 	mkdir gen.gcon.file;
 	mkdir (gen.gcon.file ^ "/src");
