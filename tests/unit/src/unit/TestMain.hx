@@ -18,7 +18,8 @@ class TestMain {
 	#end
 
 	static function main() {
-	  var verbose = #if ( cpp || neko || php ) Sys.args().indexOf("-v") >= 0 #else false #end;
+		Test.startStamp = haxe.Timer.stamp();
+		var verbose = #if ( cpp || neko || php ) Sys.args().indexOf("-v") >= 0 #else false #end;
 
 		#if cs //"Turkey Test" - Issue #996
 		cs.system.threading.Thread.CurrentThread.CurrentCulture = new cs.system.globalization.CultureInfo('tr-TR');
@@ -60,6 +61,7 @@ class TestMain {
 			new TestOrder(),
 			new TestGADT(),
 			new TestGeneric(),
+			new TestArrowFunctions(),
 			#if !no_pattern_matching
 			new TestMatch(),
 			#end

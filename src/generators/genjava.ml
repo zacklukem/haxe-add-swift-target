@@ -2059,8 +2059,6 @@ let generate con =
 	gen.greal_type <- real_type;
 	gen.greal_type_param <- change_param_type;
 
-	SetHXGen.run_filter gen.gcon gen.gtypes_list;
-
 	(* before running the filters, follow all possible types *)
 	(* this is needed so our module transformations don't break some core features *)
 	(* like multitype selection *)
@@ -2378,9 +2376,6 @@ let generate con =
 	UnreachableCodeEliminationSynf.configure gen true;
 
 	ArrayDeclSynf.configure gen native_arr_cl change_param_type;
-
-	DefaultArguments.configure gen;
-	InterfaceMetas.configure gen;
 
 	JavaSpecificSynf.configure gen runtime_cl;
 	JavaSpecificESynf.configure gen runtime_cl;

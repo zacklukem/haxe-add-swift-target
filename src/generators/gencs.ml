@@ -2631,8 +2631,6 @@ let generate con =
 		gen.greal_type <- real_type;
 		gen.greal_type_param <- change_param_type;
 
-		SetHXGen.run_filter gen.gcon gen.gtypes_list;
-
 		(* before running the filters, follow all possible types *)
 		(* this is needed so our module transformations don't break some core features *)
 		(* like multitype selection *)
@@ -2732,7 +2730,6 @@ let generate con =
 		EnumToClass2.configure gen enum_base;
 
 		InterfaceVarsDeleteModf.configure gen;
-		InterfaceProps.configure gen;
 
 		let dynamic_object = (get_cl (get_type gen (["haxe";"lang"],"DynamicObject")) ) in
 
@@ -3072,9 +3069,6 @@ let generate con =
 		UnreachableCodeEliminationSynf.configure gen false;
 
 		ArrayDeclSynf.configure gen native_arr_cl change_param_type;
-
-		DefaultArguments.configure gen;
-		InterfaceMetas.configure gen;
 
 		CSharpSpecificSynf.configure gen runtime_cl;
 		CSharpSpecificESynf.configure gen runtime_cl;

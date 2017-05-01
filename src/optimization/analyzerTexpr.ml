@@ -288,41 +288,6 @@ module TexprFilter = struct
 		loop e
 end
 
-module VarLazifier = struct
-	let apply com e =
-		let rec loop var_inits e = match e.eexpr with
-			| TVar(v,Some e1) when (Meta.has (Meta.Custom ":extractorVariable") v.v_meta) ->
-				let var_inits,e1 = loop var_inits e1 in
-				let var_inits = PMap.add v.v_id e1 var_inits in
-				var_inits,{e with eexpr = TVar(v,None)}
-			| TLocal v ->
-				begin try
-					let e_init = PMap.find v.v_id var_inits in
-					let e = {e with eexpr = TBinop(OpAssign,e,e_init)} in
-					let e = {e with eexpr = TParenthesis e} in
-					let var_inits = PMap.remove v.v_id var_inits in
-					var_inits,e
-				with Not_found ->
-					var_inits,e
-				end
-			| TIf(e1,e2,eo) ->
-				let var_inits,e1 = loop var_inits e1 in
-				let _,e2 = loop var_inits e2 in
-				let eo = match eo with None -> None | Some e -> Some (snd (loop var_inits e)) in
-				var_inits,{e with eexpr = TIf(e1,e2,eo)}
-			| TSwitch(e1,cases,edef) ->
-				let var_inits,e1 = loop var_inits e1 in
-				let cases = List.map (fun (el,e) ->
-					let _,e = loop var_inits e in
-					el,e
-				) cases in
-				let edef = match edef with None -> None | Some e -> Some (snd (loop var_inits e)) in
-				var_inits,{e with eexpr = TSwitch(e1,cases,edef)}
-			| _ ->
-				Texpr.foldmap loop var_inits e
-		in
-		snd (loop PMap.empty e)
-end
 
 (*
 	An InterferenceReport represents in which way a given code may be influenced and
@@ -661,6 +626,33 @@ module Fusion = struct
 				end
 			| {eexpr = TVar(v1,Some e1)} :: el when config.optimize && config.local_dce && state#get_reads v1 = 0 && state#get_writes v1 = 0 ->
 				fuse acc (e1 :: el)
+			| ({eexpr = TVar(v1,None)} as ev) :: el when not v1.v_capture ->
+				let found = ref false in
+				let rec replace deep e = match e.eexpr with
+					| TBinop(OpAssign,{eexpr = TLocal v2},e2) when v1 == v2 ->
+						if deep then raise Exit;
+						found := true;
+						{ev with eexpr = TVar(v1,Some e2)}
+					| TLocal v2 when v1 == v2 -> raise Exit
+					| _ -> Type.map_expr (replace true) e
+				in
+				begin try
+					let rec loop acc el = match el with
+						| e :: el ->
+							let e = replace false e in
+							if !found then (List.rev (e :: acc)) @ el
+							else loop (e :: acc) el
+						| [] ->
+							List.rev acc
+					in
+					let el = loop [] el in
+					if not !found then raise Exit;
+					state#changed;
+					state#dec_writes v1;
+					fuse acc el
+				with Exit ->
+					fuse (ev :: acc) el
+				end
 			| ({eexpr = TVar(v1,Some e1)} as ev) :: el when can_be_fused v1 e1 ->
 				let found = ref false in
 				let blocked = ref false in
@@ -843,7 +835,30 @@ module Fusion = struct
 					fuse acc el
 				with Exit ->
 					if config.fusion_debug then print_endline (Printf.sprintf "NO: %s" (Printexc.get_backtrace()));
-					fuse (ev :: acc) el
+					begin match el with
+					| ({eexpr = TUnop((Increment | Decrement) as op,Prefix,{eexpr = TLocal v1})} as e2) :: el ->
+						let found = ref false in
+						let rec replace e = match e.eexpr with
+							| TLocal v2 when v1 == v2 ->
+								if !found then raise Exit;
+								found := true;
+								{e with eexpr = TUnop(op,Postfix,e)}
+							| TIf _ | TSwitch _ | TTry _ | TWhile _ | TFor _ ->
+								raise Exit
+							| _ ->
+								Type.map_expr replace e
+						in
+						begin try
+							let ev = replace ev in
+							if not !found then raise Exit;
+							state#changed;
+							fuse acc (ev :: el)
+						with Exit ->
+							fuse (ev :: acc) (e2 :: el)
+						end
+					| _ ->
+						fuse (ev :: acc) el
+					end
 				end
 			| {eexpr = TUnop((Increment | Decrement as op,Prefix,({eexpr = TLocal v} as ev)))} as e1 :: e2 :: el ->
 				begin try

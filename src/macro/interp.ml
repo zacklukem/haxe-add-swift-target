@@ -1991,7 +1991,7 @@ and eval ctx (e,p) =
 			| _ ->
 				VNull
 		in
-		(fun() -> try loop (DynArray.length ctx.stack) with Sys.Break -> throw ctx p "Ctrl+C")
+		(fun() -> try loop (DynArray.length ctx.stack) with Sys.Break when (try Sys.getenv "HAXEDEBUG" <> "1" with _ -> true) -> throw ctx p "Ctrl+C")
 	| EWhile (econd,e,DoWhile) ->
 		let e = eval ctx e in
 		let econd = eval ctx econd in
@@ -2834,10 +2834,6 @@ let decode_int = function
 let decode_i32 = function
 	| VInt i -> Int32.of_int i
 	| VInt32 i -> i
-	| _ -> raise Invalid_expr
-
-let decode_bytes = function
-	| VString s -> s
 	| _ -> raise Invalid_expr
 
 let encode_pos p =
