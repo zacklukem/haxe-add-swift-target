@@ -17,6 +17,7 @@ type platform =
 	| Cpp
 	| Cs
 	| Java
+    | Swift
 	| Python
 	| Hl
 
@@ -38,6 +39,7 @@ let platforms = [
 	Cpp;
 	Cs;
 	Java;
+    Swift;
 	Python;
 	Hl;
 ]
@@ -52,6 +54,7 @@ let platform_name = function
 	| Cpp -> "cpp"
 	| Cs -> "cs"
 	| Java -> "java"
+    | Swift -> "swift"
 	| Python -> "python"
 	| Hl -> "hl"
 

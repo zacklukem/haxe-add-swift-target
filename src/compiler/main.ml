@@ -87,7 +87,7 @@ let error ctx msg p =
 	ctx.has_error <- true
 
 let reserved_flags = [
-	"cross";"js";"lua";"neko";"flash";"php";"cpp";"cs";"java";"python";
+    "cross";"js";"lua";"neko";"flash";"php";"cpp";"cs";"java";"swift";"python";
 	"as3";"swc";"macro";"sys"
 	]
 
@@ -308,6 +308,15 @@ module Initialize = struct
 				);
 				Java.before_generate com;
 				add_std "java"; "java"
+            | Swift ->
+ 			(* let old_flush = ctx.flush in
+ 			    ctx.flush <- (fun () ->
+ 				    List.iter (fun (_,_,close,_,_) -> close()) com.swift_libs;
+ 				    com.swift_libs <- [];
+ 				    old_flush()
+ 			);
+ 			Genswift.before_generate com; TODO: uncomment this code if and when swift_libs become a thing*)
+ 			add_std "swift"; "swift"
 			| Python ->
 				add_std "python";
 				"python"
@@ -362,6 +371,8 @@ let generate tctx ext xml_out interp swf_header =
 			Gencs.generate,"cs"
 		| Java ->
 			Genjava.generate,"java"
+        | Swift -> 
+            Genswift.generate,"swift"
 		| Python ->
 			Genpy.generate,"python"
 		| Hl ->
@@ -460,7 +471,7 @@ let rec process_params create pl =
 
 and init ctx =
 	let usage = Printf.sprintf
-		"Haxe Compiler %s - (C)2005-2017 Haxe Foundation\n Usage : haxe%s -main <class> [-swf|-js|-neko|-php|-cpp|-cppia|-as3|-cs|-java|-python|-hl|-lua] <output> [options]\n Options :"
+		"Haxe Compiler %s - (C)2005-2017 Haxe Foundation\n Usage : haxe%s -main <class> [-swf|-js|-neko|-php|-cpp|-cppia|-as3|-cs|-java|-swift|-python|-hl|-lua] <output> [options]\n Options :"
 		s_version (if Sys.os_type = "Win32" then ".exe" else "")
 	in
 	let com = ctx.com in
@@ -534,6 +545,10 @@ try
 			cp_libs := "hxjava" :: !cp_libs;
 			Initialize.set_platform com Java dir;
 		),"<directory> : generate Java code into target directory");
+        ("-swift",Arg.String (fun dir ->
+ 			(*cp_libs := "hxswift" :: !cp_libs; TODO uncomment when/if hxswift is necessary *)
+ 			Initialize.set_platform com Swift dir;
+ 		),"<directory> : generate Swift code into target directory");
 		("-python",Arg.String (fun dir ->
 			Initialize.set_platform com Python dir;
 		),"<file> : generate Python code as target file");
@@ -604,6 +619,7 @@ try
 			let std = file = "lib/hxjava-std.jar" in
 			arg_delays := (fun () -> Java.add_java_lib com file std) :: !arg_delays;
 		),"<file> : add an external JAR or class directory library");
+        (*TODO support -swift-lib*)
 		("-net-lib",Arg.String (fun file ->
 			let file, is_std = match ExtString.String.nsplit file "@" with
 				| [file] ->
@@ -619,7 +635,7 @@ try
 		),"<file> : add a root std .NET DLL search path");
 		("-c-arg",Arg.String (fun arg ->
 			com.c_args <- arg :: com.c_args
-		),"<arg> : pass option <arg> to the native Java/C# compiler");
+		),"<arg> : pass option <arg> to the native Java/C#/Swift compiler");
 		("-x", Arg.String (fun file ->
 			let neko_file = file ^ ".n" in
 			Initialize.set_platform com Neko neko_file;
@@ -664,6 +680,7 @@ try
 					if not std then
 						List.iter (fun path -> if path <> (["java";"lang"],"String") then classes := path :: !classes) (all_files())
 				) com.java_libs;
+                (*TODO: support swift_libs here eventually*)
 				List.iter (fun (_,std,all_files,_) ->
 					if not std then
 						List.iter (fun path -> classes := path :: !classes) (all_files())

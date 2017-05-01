@@ -285,6 +285,7 @@ type context = {
 	mutable php_prefix : string option;
 	mutable swf_libs : (string * (unit -> Swf.swf) * (unit -> ((string list * string),As3hl.hl_class) Hashtbl.t)) list;
 	mutable java_libs : (string * bool * (unit -> unit) * (unit -> (path list)) * (path -> ((JData.jclass * string * string) option))) list; (* (path,std,close,all_files,lookup) *)
+	(*mutable swift_libs: (*definition TBD*) (* (path,std,close,all_files,lookup) *) *)
 	mutable net_libs : (string * bool * (unit -> path list) * (path -> IlData.ilclass option)) list; (* (path,std,all_files,lookup) *)
 	mutable net_std : string list;
 	net_path_map : (path,string list * string list * string) Hashtbl.t;
@@ -584,7 +585,7 @@ module Define = struct
 		| JsUnflatten -> ("js_unflatten","Generate nested objects for packages and types")
 		| JsSourceMap -> ("js_source_map","Generate JavaScript source map even in non-debug mode")
 		| SourceMap -> ("source_map","Generate source map for compiled files (Currently supported for php7 only)")
-		| KeepOldOutput -> ("keep_old_output","Keep old source files in the output directory (for C#/Java)")
+		| KeepOldOutput -> ("keep_old_output","Keep old source files in the output directory (for C#/Swift/Java)")
 		| LoopUnrollMaxCost -> ("loop_unroll_max_cost","Maximum cost (number of expressions * iterations) before loop unrolling is canceled (default 250)")
 		| LuaJit -> ("lua_jit","Enable the jit compiler for lua (version 5.2 only")
 		| LuaVer -> ("lua_ver","The lua version to target")
@@ -596,7 +597,7 @@ module Define = struct
 		| NekoSource -> ("neko_source","Output neko source instead of bytecode")
 		| NekoV1 -> ("neko_v1","Keep Neko 1.x compatibility")
 		| NetworkSandbox -> ("network-sandbox","Use local network sandbox instead of local file access one")
-		| NoCompilation -> ("no-compilation","Disable final compilation for Cs, Cpp and Java")
+		| NoCompilation -> ("no-compilation","Disable final compilation for Cs, Cpp, Swift, and Java")
 		| NoCOpt -> ("no_copt","Disable completion optimization (for debug purposes)")
 		| NoDebug -> ("no_debug","Remove all debug macros from cpp output")
 		| NoDeprecationWarnings -> ("no-deprecation-warnings","Do not warn if fields annotated with @:deprecated are used")
@@ -644,6 +645,7 @@ let short_platform_name = function
 	| Cpp -> "cpp"
 	| Cs -> "cs"
 	| Java -> "jav"
+	| Swift -> "swift"
 	| Python -> "py"
 	| Hl -> "hl"
 
@@ -741,6 +743,12 @@ let get_config com =
 			pf_pad_nulls = true;
 			pf_overload = true;
 		}
+    | Swift ->
+		{
+			default_config with
+			pf_add_final_return = true;
+			pf_overload = true;
+		}
 	| Python ->
 		{
 			default_config with
@@ -813,6 +821,7 @@ let create version s_version args =
 		php_lib = None;
 		swf_libs = [];
 		java_libs = [];
+		(*swift_libs = [];*)
 		net_libs = [];
 		net_std = [];
 		net_path_map = Hashtbl.create 0;

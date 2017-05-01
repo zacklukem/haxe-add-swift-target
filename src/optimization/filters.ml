@@ -1182,7 +1182,7 @@ let run com tctx main =
 	let type_filters = [
 		check_private_path;
 		apply_native_paths;
-		add_rtti;
+		(match com.platform with | Swift -> (fun _ _ -> ()) | _ -> add_rtti);
 		(match com.platform with | Java | Cs -> (fun _ _ -> ()) | _ -> add_field_inits);
 		(match com.platform with Hl -> (fun _ _ -> ()) | _ -> add_meta_field);
 		check_void_field;
