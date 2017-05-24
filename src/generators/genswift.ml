@@ -701,7 +701,13 @@ let generate con =
 								let rec loop i =
 									if i <= 0 then () else (write w "[]"; loop (i-1))
 								in
-								loop (times - 1)
+								loop (times - 1);
+                write w "(repeating: ";
+                print w "%s" (t_s e.epos t);
+                (* FIXME need real Object of type for repeating see FieldLookup.swift line 40 in examples *)
+                write w "(), count: ";
+                expr_s w size;
+      					write w ")"
 					in
 					check_t_s (TInst(cl, params)) 0
 				| TNew ({ cl_path = ([], "String") }, [], el) ->
@@ -716,7 +722,7 @@ let generate con =
 						print w "nil /* This code should never be reached. It was produced by the use of @:generic on a new type parameter instance: %s */" (path_param_s e.epos (TClassDecl cl) cl.cl_path params cl.cl_meta)
 				| TNew (cl, params, el) ->
 					write w (path_param_s e.epos (TClassDecl cl) cl.cl_path params cl.cl_meta);
-          Dumpobj.print_obj params;
+
 					write w "(";
 					ignore (List.fold_left (fun acc e ->
 						(if acc <> 0 then write w ", ");
