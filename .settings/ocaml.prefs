@@ -1,0 +1,4 @@
+compil_mode//extra/clean-whitespace=native
+compil_mode/haxe=native
+compil_mode/haxelib=native
+eclipse.preferences.version=1

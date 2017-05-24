@@ -50,7 +50,7 @@ package swift.internal;
 	@:extern
 	static inline function __insert<T>(a:swift.NativeArray<T>, length:Int, pos:Int, x:T):swift.NativeArray<T>
 	{
-        return null;
+        return new swift.NativeArray<T>(a.length); // TODO implement
 	}
 
 	static function insertString(a:swift.NativeArray<String>, length:Int, pos:Int, x:String):swift.NativeArray<String> return __insert(a, length, pos, x);

@@ -287,7 +287,7 @@ let generate con =
 
 	let change_path path = (change_ns (fst path), change_clname (snd path)) in
 
-	let path_s path meta =  
+	let path_s path meta =
         match path with
 			| (ns,clname) -> s_type_path (change_ns ns, change_clname clname)
 	in
@@ -318,10 +318,10 @@ let generate con =
 							(* real_type t *)
 					| _ -> real_type t
 				)
-			| TType _  
-            | TAbstract _  
-			| TAnon _ 
-			| TFun _ 
+			| TType _
+            | TAbstract _
+			| TAnon _
+			| TFun _
                 -> t
 			| _ -> t_dynamic
 	in
@@ -387,7 +387,7 @@ let generate con =
 			| TAbstract ({ a_path = ["haxe"],"Int32" },[]) -> "Int32"
 			| TInst ({ cl_path = ["haxe"],"Int64" },[])
 			| TAbstract ({ a_path = ["haxe"],"Int64" },[]) -> "Int64"
-			| TInst({ cl_path = (["haxe";"root"], "Array") }, [param]) 
+			| TInst({ cl_path = (["haxe";"root"], "Array") }, [param])
             | TInst({ cl_path = (["swift"], "NativeArray") }, [param]) ->
 				let rec check_t_s t =
 					match real_type t with
@@ -433,7 +433,7 @@ let generate con =
 			| TAbstract ({ a_path = ["haxe"],"Int64" },[]) ->
 				    "Int64"
 			| TInst ({ cl_path = ["haxe"],"Int32" },[])
-			| TAbstract ({ a_path = ["haxe"],"Int32" },[]) -> 
+			| TAbstract ({ a_path = ["haxe"],"Int32" },[]) ->
                     "Int32"
 			| TType ({ t_path = ["swift"],"Int8" },[])
 			| TAbstract ({ a_path = ["swift"],"Int8" },[]) ->
@@ -448,7 +448,7 @@ let generate con =
 			| TAbstract ({ a_path = [],"Single" },[]) ->
 					"Float"
 			| TDynamic _ -> "Any?"
-            | TType({ t_path = [],"String" },[]) -> 
+            | TType({ t_path = [],"String" },[]) ->
                     "String"
             | TInst({ cl_path = (["haxe";"root"], "Array") }, [param]) ->
                 param_t_s pos param
@@ -588,7 +588,7 @@ let generate con =
 								| TAbstract _ when like_float e.etype ->
 									expr_s w (mk_cast e.etype { e with eexpr = TConst(TFloat "0.0") } )
 								| t -> write w ("nil") )
-						| TThis -> write w "this"
+						| TThis -> write w "self"
 						| TSuper -> write w "super")
 				| TLocal var ->
 					write_id w var.v_name
@@ -613,10 +613,10 @@ let generate con =
 					in
 					loop cf.cf_meta
 				| TField (e, s) ->
-                    let maybeExcl = function  
+                    let maybeExcl = function
                         | FStatic(_,_) -> "."
                         | _ -> "!."
-                    in 
+                    in
 					expr_s w e; write w (maybeExcl s); write_field w (field_name s)
 				| TTypeExpr (TClassDecl { cl_path = (["haxe"], "Int32") }) ->
 					write w (path_s_import e.epos (["haxe"], "Int32") [])
@@ -640,7 +640,7 @@ let generate con =
 				| TArrayDecl el ->
 					let et, el = extract_tparams [] el in
                     let foldFunc acc t = acc ^ (param_t_s e.epos t) in
-                    let stringParams = List.fold_left foldFunc "" et in 
+                    let stringParams = List.fold_left foldFunc "" et in
                     let isNotEmpty = (List.length et >= 1) in
                     if isNotEmpty then
                         (write w "Array<";
@@ -653,7 +653,7 @@ let generate con =
 					    	acc + 1
 					    ) 0 el);
 					    write w ")")
-                    else 
+                    else
                         write w "[]"
 				| TCall ({ eexpr = TLocal( { v_name = "__swift__" } ) }, [ { eexpr = TConst(TString(s)) } ] ) ->
 					write w s
@@ -716,6 +716,7 @@ let generate con =
 						print w "nil /* This code should never be reached. It was produced by the use of @:generic on a new type parameter instance: %s */" (path_param_s e.epos (TClassDecl cl) cl.cl_path params cl.cl_meta)
 				| TNew (cl, params, el) ->
 					write w (path_param_s e.epos (TClassDecl cl) cl.cl_path params cl.cl_meta);
+          Dumpobj.print_obj params;
 					write w "(";
 					ignore (List.fold_left (fun acc e ->
 						(if acc <> 0 then write w ", ");
@@ -861,24 +862,24 @@ let generate con =
 					write w " ]";
 					if !strict_mode then assert false
 				| TObjectDecl obj ->
-                    (match obj with 
+                    (match obj with
                     | [] -> ()
                     | _ ->
                         (write w "(");
                         (
-                        let fst = ref true in 
+                        let fst = ref true in
                         let iterFunc = fun (name,expr) ->
                             ( (if !fst then fst := false else write w ", ");
                             (write w (change_id name));
                             (write w ":");
-                            (expr_s w expr); ) in                     
-                        List.iter iterFunc obj;    
+                            (expr_s w expr); ) in
+                        List.iter iterFunc obj;
                         );
                         (write w ")");
                     );
-                | TFunction func -> 
+                | TFunction func ->
                     (match func.tf_args with
-                    | [] -> print w "()"; 
+                    | [] -> print w "()";
                     | _ ->
                         let foldFunc = fun (tvar,_) acc -> acc @ [(sprintf "%s : %s" (change_id tvar.v_name) (t_s e.epos (run_follow gen tvar.v_type)))] in
                         let getArgList () = List.rev (List.fold_right foldFunc func.tf_args []) in
@@ -1016,7 +1017,7 @@ let generate con =
 				(if is_overload || List.exists (fun cf -> cf.cf_expr <> None) cf.cf_overloads then
 					gen.gcon.error "Only normal (non-dynamic) methods can be overloaded" cf.cf_pos);
 				if not is_interface then begin
-                write_parts w ("public" :: (if is_static then "class" else "") :: ["dynamic"] @ [ "func" ; (change_field name); 
+                write_parts w ("" :: (if is_static then "class" else "") :: ["dynamic"] @ [ "func" ; (change_field name);
                 (t_s cf.cf_pos (run_follow gen cf.cf_type)) ]);
 					(match cf.cf_expr with
 						| Some e ->
@@ -1039,7 +1040,7 @@ let generate con =
 				let is_override = match cf.cf_name with
 					| _ -> List.memq cf cl.cl_overrides
 				in
-				let visibility = if is_interface then "" else "public" in
+				let visibility = if is_interface then "" else "" in
 
 				let visibility, modifiers = get_fun_modifiers cf.cf_meta visibility [] in
 				let visibility, is_virtual = if is_explicit_iface then "",false else visibility, is_virtual in
@@ -1057,12 +1058,12 @@ let generate con =
 				gen_annotations w cf.cf_meta;
 				(* public override static func funcName<T> *)
 				let params, _ = get_string_params cf.cf_params in
-                
+
                 let isInitOrFunc = (if is_new then "init" else "func") in
 
                 let functionName = (if is_new then [""] else [ (change_field name); params; ]) in
 
-                write_parts w ("public" :: v_n :: is_override :: [isInitOrFunc] @ functionName);
+                write_parts w ("" :: v_n :: is_override :: [isInitOrFunc] @ functionName);
 
 				(* (arg1 : String, arg2 : Object) *)
 				(match cf.cf_expr with
@@ -1076,7 +1077,7 @@ let generate con =
                 write_parts w ([""] @ [ (" -> "); (rett_s cf.cf_pos (run_follow gen ret_type)); ]);
 
 				if is_interface || List.mem "native" modifiers then
-				    ()	
+				    ()
 				else begin
 					let rec loop meta =
 						match meta with
@@ -1107,14 +1108,14 @@ let generate con =
 		let should_close = match change_ns (fst cl.cl_path) with
 			| [] -> false
 			| ns ->
-				print w "package %s;" (String.concat "." (change_ns ns));
+				(*print w "package %s;" (String.concat "." (change_ns ns));*)
 				newline w;
 				newline w;
 				false
 		in
 
-		write w "import haxe.root.*;";
-		newline w;
+		(* write w "import haxe.root.*;"; *)
+		(* newline w; *)
 		let w_header = w in
 		let w = new_source_writer () in
 		clear_scope();
@@ -1135,10 +1136,10 @@ let generate con =
 		newline w;
 		gen_annotations w cl.cl_meta;
 
-		let clt, access, modifiers = get_class_modifiers cl.cl_meta (if cl.cl_interface then "interface" else "class") "public" [] in
+		let clt, access, modifiers = get_class_modifiers cl.cl_meta (if cl.cl_interface then "interface" else "class") "" [] in
 		let is_final = Meta.has Meta.Final cl.cl_meta in
 
-		write_parts w ("public" :: modifiers @ [clt; (change_clname (snd cl.cl_path))]);
+		write_parts w ("" :: modifiers @ [clt; (change_clname (snd cl.cl_path))]);
 
 		(* type parameters *)
 		let params, _ = get_string_params cl.cl_params in
@@ -1152,8 +1153,8 @@ let generate con =
 		print w "%s" params;
 		let cl_intf_or_super = (if is_some cl.cl_super then (cl_p_to_string (get cl.cl_super)) else "") :: (List.map cl_p_to_string cl.cl_implements) in
         (
-            match cl_intf_or_super with 
-                | [] -> () 
+            match cl_intf_or_super with
+                | [] -> ()
                 | [one] -> if one <> "" then print w " : %s" one else ()
                 | _ -> print w " : %s" (String.concat ", " cl_intf_or_super)
 		);
@@ -1212,7 +1213,7 @@ let generate con =
 		in
 
 		gen_annotations w e.e_meta;
-		print w "public enum %s" (change_clname (snd e.e_path));
+		print w "enum %s" (change_clname (snd e.e_path));
 		begin_block w;
 		write w (String.concat ", " (List.map (change_id) e.e_names));
 		end_block w;
@@ -1220,7 +1221,7 @@ let generate con =
 		if should_close then end_block w
 	in
 
-    let gen_type w td = 
+    let gen_type w td =
         let should_close = match change_ns (fst td.t_path) with
 			| [] -> false
 			| ns ->
@@ -1230,28 +1231,28 @@ let generate con =
 				false
 		in
 
-        let a_fields = match td.t_type with 
-            | TMono(m) -> 
-                (match !m with 
+        let a_fields = match td.t_type with
+            | TMono(m) ->
+                (match !m with
                 | Some m ->
-                    (match run_follow gen m with 
+                    (match run_follow gen m with
                     | TAnon(a) -> a.a_fields
-                    | _ -> assert false 
+                    | _ -> assert false
                     )
                 | _ -> assert false)
             | _ -> assert false
         in
 		gen_annotations w td.t_meta;
-		print w "public typealias %s = " (change_clname (snd td.t_path));
+		print w "typealias %s = " (change_clname (snd td.t_path));
         write w "\n(\n";
-        
+
         let iterFunc = fun name cf ->
             write w ("\t" ^ (change_id name) ^ " : " ^ (t_s cf.cf_pos cf.cf_type) ^ "\n")
         in
 		PMap.iter (iterFunc) a_fields;
 		write w ")\n";
 
-		if should_close then end_block w 
+		if should_close then end_block w
     in
 
 	let module_type_gen w md_tp =
@@ -1271,18 +1272,18 @@ let generate con =
 					newline w
 				end;
 				(not e.e_extern)
-			| TTypeDecl td -> (match td.t_type with 
-                | TMono(m) -> 
-                    (match !m with 
+			| TTypeDecl td -> (match td.t_type with
+                | TMono(m) ->
+                    (match !m with
                     | Some m ->
-                        (match run_follow gen m with 
+                        (match run_follow gen m with
                         | TAnon(a) -> gen_type w td; (*print_string "\n";*) true
-                        | _ -> false 
+                        | _ -> false
                         )
                         (* print_string "\n"; *)
                     | None -> false);
                 | _ -> false)
-			| _ -> false 
+			| _ -> false
 	in
 
 	(* generate source code *)
@@ -1354,8 +1355,10 @@ let generate con =
 	ArrayDeclSynf.configure gen native_arr_cl change_param_type;
 
 	let mkdir dir = if not (Sys.file_exists dir) then Unix.mkdir dir 0o755 in
-	mkdir gen.gcon.file;
-	mkdir (gen.gcon.file ^ "/src");
+
+  (* make sources and main folder *)
+  mkdir gen.gcon.file;
+	mkdir (gen.gcon.file ^ "/Sources");
 
 	let out_files = ref [] in
 
@@ -1364,7 +1367,7 @@ let generate con =
 	Hashtbl.iter (fun name v ->
 		res := { eexpr = TConst(TString name); etype = gen.gcon.basic.tstring; epos = null_pos } :: !res;
 		let name = Codegen.escape_res_name name true in
-		let full_path = gen.gcon.file ^ "/src/" ^ name in
+		let full_path = gen.gcon.file ^ "/Sources/" ^ name in
 		mkdir_from_path full_path;
 
 		let f = open_out_bin full_path in
@@ -1386,18 +1389,45 @@ let generate con =
 	let parts = Str.split_delim (Str.regexp "[\\/]+") gen.gcon.file in
 	mkdir_recursive "" parts;
 
-	let source_dir = gen.gcon.file ^ "/src" in
+	let source_dir = gen.gcon.file ^ "/Sources" in
 	List.iter (fun md ->
 		let w = SourceWriter.new_source_writer () in
 		let should_write = module_type_gen w md in
 		if should_write then begin
 			let path = change_path (t_path md) in
-			write_file gen w (source_dir ^ "/" ^ (String.concat "/" (fst path))) path "swift" out_files;
+
+			(* write_file gen w (source_dir ^ "/" ^ (String.concat "/" (fst path))) path "swift" out_files; *)
+			write_file gen w source_dir path "swift" out_files;
 		end
 	) gen.gtypes_list;
 
+  (* Generate Package.swift File *)
+  (* TODO make this more safe? *)
+  let w0 = SourceWriter.new_source_writer () in
+
+  print w0 "// swift-tools-version:3.1";
+  newline w0;
+  newline w0;
+  print w0 "// Package.swift generated by haxe";
+  newline w0;
+  newline w0;
+  print w0 "import PackageDescription";
+  newline w0;
+  newline w0;
+
+  print w0 "let package = Package(";
+  newline w0;
+
+  print w0 ("\t\tname: \"swift\""); (* TODO package name *)
+  newline w0;
+
+  print w0 ")";
+  newline w0;
+
+  write_file gen w0 gen.gcon.file ("", "Package") "swift" out_files;
+
 	if not (Common.defined gen.gcon Define.KeepOldOutput) then
-		clean_files (gen.gcon.file ^ "/src") !out_files gen.gcon.verbose;
+		clean_files (gen.gcon.file ^ "/Sources") !out_files gen.gcon.verbose;
     (*this next void return is necessary to compile when I comment out the block below.*)
     ()
 

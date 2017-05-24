@@ -49,7 +49,7 @@
 		return "";
 	}
 
-	public function matchedPos() : { pos : Int, len : Int } 
+	public function matchedPos() : { pos : Int, len : Int }
     {
 		return { pos : 0, len : 0 };
 	}
@@ -79,8 +79,12 @@
         return "";
 	}
 
-	public function map( s : String, f : EReg -> String ) : String 
+	public function map( s : String, f : EReg -> String ) : String
     {
 		return "";
+	}
+
+	public static function escape( s : String ) : String {
+		return null;
 	}
 }
