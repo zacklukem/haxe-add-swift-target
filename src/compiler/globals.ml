@@ -4,7 +4,7 @@ type pos = {
 	pmax : int;
 }
 
-module IntMap = Map.Make(struct type t = int let compare a b = a - b end)
+module IntMap = Ptmap
 module StringMap = Map.Make(struct type t = string let compare = String.compare end)
 
 type platform =
@@ -20,6 +20,7 @@ type platform =
     | Swift
 	| Python
 	| Hl
+	| Eval
 
 let version = 4000
 let version_major = version / 1000
@@ -42,6 +43,7 @@ let platforms = [
     Swift;
 	Python;
 	Hl;
+	Eval;
 ]
 
 let platform_name = function
@@ -57,6 +59,7 @@ let platform_name = function
     | Swift -> "swift"
 	| Python -> "python"
 	| Hl -> "hl"
+	| Eval -> "eval"
 
 let null_pos = { pfile = "?"; pmin = -1; pmax = -1 }
 

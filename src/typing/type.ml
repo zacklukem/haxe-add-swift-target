@@ -1268,8 +1268,8 @@ let s_class_kind = function
 
 module Printer = struct
 
-	let s_type =
-		s_type (print_context())
+	let s_type t =
+		s_type (print_context()) t
 
 	let s_pair s1 s2 =
 		Printf.sprintf "(%s,%s)" s1 s2
@@ -2651,6 +2651,7 @@ module Texpr = struct
 		let copy_var v =
 			let v2 = alloc_var v.v_name v.v_type v.v_pos in
 			v2.v_meta <- v.v_meta;
+			v2.v_extra <- v.v_extra;
 			Hashtbl.add vars v.v_id v2;
 			v2;
 		in
