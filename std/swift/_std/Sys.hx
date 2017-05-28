@@ -24,7 +24,7 @@
 ///import sys.io.Process;
 //using haxe.Int64;
 
-@:coreApi class Sys {
+@:coreApi @:keep class Sys {
 	private static var _args:swift.NativeArray<String>;
 	private static var _env:haxe.ds.StringMap<String>;
 	private static var _sysName:String;
@@ -39,7 +39,7 @@
 	{
 	}
 
-    @functionCode('
+    @:functionCode('
             if (CommandLine.arguments == nil)
 			    return [String]()
             else 
@@ -50,7 +50,7 @@
         return null;
 	}
 
-    @functionCode('
+    @:functionCode('
             	guard let rawValue = getenv(s) else { return nil }
                 return String(utf8String: rawValue)
             ')
@@ -59,7 +59,7 @@
 	    return null;
 	}
 
-    @functionCode('
+    @:functionCode('
                 if (s != nil && v != nil) 
                 {
                     setenv(s, v, 1/*overwrite*/)
