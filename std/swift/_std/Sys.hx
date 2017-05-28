@@ -20,22 +20,18 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-//import swift.lang.System;
-///import sys.io.Process;
-//using haxe.Int64;
-
 @:coreApi @:keep class Sys {
 	private static var _args:swift.NativeArray<String>;
 	private static var _env:haxe.ds.StringMap<String>;
 	private static var _sysName:String;
 
     @:functionCode('Swift.print(v, appendNewLine: false))')
-	public static inline function print( v : Dynamic ) : Void
+	public static function print( v : Dynamic ) : Void
 	{
 	}
 
     @:functionCode('Swift.print(v, appendNewLine: true))')    
-	public static inline function println( v : Dynamic ) : Void
+	public static function println( v : Dynamic ) : Void
 	{
 	}
 
