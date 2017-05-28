@@ -159,7 +159,7 @@ let reserved = let res = Hashtbl.create 120 in
 	List.iter (fun lst -> Hashtbl.add res lst ("_" ^ lst)) ["abstract"; "assert"; "boolean"; "break"; "byte"; "case"; "catch"; "char"; "class";
 		"const"; "continue"; "default"; "do"; "double"; "else"; "enum"; "extends"; "final";
 		"false"; "finally"; "float"; "for"; "goto"; "if"; "implements"; "import"; "instanceof"; "int";
-		"interface"; "long"; "native"; "new"; "null"; "package"; "private"; "protected"; "public"; "return"; "short";
+		"protocol"; "long"; "native"; "new"; "null"; "package"; "private"; "protected"; "public"; "return"; "short";
 		"static"; "strictfp"; "super"; "switch"; "synchronized"; "this"; "throw"; "throws"; "transient"; "true"; "try";
 		"void"; "volatile"; "while"; ];
 	res
@@ -1135,7 +1135,7 @@ let generate con =
 		newline w;
 		gen_annotations w cl.cl_meta;
 
-		let clt, access, modifiers = get_class_modifiers cl.cl_meta (if cl.cl_interface then "interface" else "class") "public" [] in
+		let clt, access, modifiers = get_class_modifiers cl.cl_meta (if cl.cl_interface then "protocol" else "class") "public" [] in
 		let is_final = Meta.has Meta.Final cl.cl_meta in
 
 		write_parts w ("public" :: modifiers @ [clt; (change_clname (snd cl.cl_path))]);
@@ -1355,7 +1355,7 @@ let generate con =
 
 	let mkdir dir = if not (Sys.file_exists dir) then Unix.mkdir dir 0o755 in
 	mkdir gen.gcon.file;
-	mkdir (gen.gcon.file ^ "/src");
+	mkdir (gen.gcon.file ^ "/sources");
 
 	let out_files = ref [] in
 
@@ -1364,7 +1364,7 @@ let generate con =
 	Hashtbl.iter (fun name v ->
 		res := { eexpr = TConst(TString name); etype = gen.gcon.basic.tstring; epos = null_pos } :: !res;
 		let name = Codegen.escape_res_name name true in
-		let full_path = gen.gcon.file ^ "/src/" ^ name in
+		let full_path = gen.gcon.file ^ "/sources/" ^ name in
 		mkdir_from_path full_path;
 
 		let f = open_out_bin full_path in
@@ -1386,7 +1386,7 @@ let generate con =
 	let parts = Str.split_delim (Str.regexp "[\\/]+") gen.gcon.file in
 	mkdir_recursive "" parts;
 
-	let source_dir = gen.gcon.file ^ "/src" in
+	let source_dir = gen.gcon.file ^ "/sources" in
 	List.iter (fun md ->
 		let w = SourceWriter.new_source_writer () in
 		let should_write = module_type_gen w md in
@@ -1397,7 +1397,7 @@ let generate con =
 	) gen.gtypes_list;
 
 	if not (Common.defined gen.gcon Define.KeepOldOutput) then
-		clean_files (gen.gcon.file ^ "/src") !out_files gen.gcon.verbose;
+		clean_files (gen.gcon.file ^ "/sources") !out_files gen.gcon.verbose;
     (*this next void return is necessary to compile when I comment out the block below.*)
     ()
 
