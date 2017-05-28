@@ -1011,12 +1011,12 @@ let generate con =
 			| name -> name, false, false
 		in
 		(match cf.cf_kind with
-			| Var _
+            | Var _
 			| Method (MethDynamic) when not (Type.is_extern_field cf) ->
 				(if is_overload || List.exists (fun cf -> cf.cf_expr <> None) cf.cf_overloads then
 					gen.gcon.error "Only normal (non-dynamic) methods can be overloaded" cf.cf_pos);
 				if not is_interface then begin
-                write_parts w ("public" :: (if is_static then "class" else "") :: ["dynamic"] @ [ "func" ; (change_field name); 
+                write_parts w ("public" :: (if is_static then "class" else "") :: ["dynamic"] @ [ "func" ; (change_field name); (" -> "); 
                 (t_s cf.cf_pos (run_follow gen cf.cf_type)) ]);
 					(match cf.cf_expr with
 						| Some e ->
@@ -1073,6 +1073,7 @@ let generate con =
 				);
 
                 (* -> ret_type *)
+                if not is_new then
                 write_parts w ([""] @ [ (" -> "); (rett_s cf.cf_pos (run_follow gen ret_type)); ]);
 
 				if is_interface || List.mem "native" modifiers then
@@ -1107,13 +1108,14 @@ let generate con =
 		let should_close = match change_ns (fst cl.cl_path) with
 			| [] -> false
 			| ns ->
-				print w "package %s;" (String.concat "." (change_ns ns));
+				(*print w "package %s;" (String.concat "." (change_ns ns));
 				newline w;
-				newline w;
+				newline w;*)
 				false
 		in
 
-		write w "import haxe.root.*;";
+        (*write w "import haxe.root.*;";*)
+        write w "import Foundation"; 
 		newline w;
 		let w_header = w in
 		let w = new_source_writer () in
@@ -1182,32 +1184,94 @@ let generate con =
 		in
 		loop cl.cl_meta;
 
-		(if is_some cl.cl_constructor then gen_class_field w false cl is_final (get cl.cl_constructor));
-		(if not cl.cl_interface then List.iter (gen_class_field w true cl is_final) cl.cl_ordered_statics);
-		List.iter (gen_class_field w false cl is_final) cl.cl_ordered_fields;
+(* collect properties and events *)
+        let partition cf cflist =
+			let props, nonprops = ref [], ref [] in
 
+            List.iter (fun v -> match v.cf_kind with
+				| Var { v_read = AccCall } | Var { v_write = AccCall } (*when Type.is_extern_field v && Meta.has Meta.Property v.cf_meta*) ->
+					props := (v.cf_name, ref (v, v.cf_type, None, None)) :: !props;
+				| _ ->
+					nonprops := v :: !nonprops;
+			) cflist;
+
+			let nonprops = !nonprops in
+
+			(*let t = TInst(cl, List.map snd cl.cl_params) in*)
+			let find_prop name = try
+					List.assoc name !props
+				with | Not_found -> (*match field_access gen t name with
+					| FClassField (_,_,decl,v,_,t,_) when is_extern_prop (TInst(cl,List.map snd cl.cl_params)) name ->
+						let ret = ref (v,t,None,None) in
+						props := (name, ret) :: !props;
+						ret
+					| _ ->*) raise Not_found
+			in
+
+			(*let is_empty_function cf = match cf.cf_expr with
+				| Some {eexpr = TFunction { tf_expr = {eexpr = TBlock []}}} -> true
+				| _ -> false
+			in*)
+
+			let interf = cl.cl_interface in
+			(* get all functions that are getters/setters *)
+			let nonprops = List.filter (function
+				| cf when String.starts_with cf.cf_name "get_" -> (try
+					(* find the property *)
+					let prop = find_prop (String.sub cf.cf_name 4 (String.length cf.cf_name - 4)) in
+					let v, t, get, set = !prop in
+					assert (get = None);
+					prop := (v,t,Some cf,set);
+					not interf
+				with | Not_found -> true)
+				| cf when String.starts_with cf.cf_name "set_" -> (try
+					(* find the property *)
+					let prop = find_prop (String.sub cf.cf_name 4 (String.length cf.cf_name - 4)) in
+					let v, t, get, set = !prop in
+					assert (set = None);
+					prop := (v,t,get,Some cf);
+					not interf
+				with | Not_found -> true)
+			    | _ -> true
+			) nonprops in
+
+			let nonprops = ref nonprops in
+
+			let ret = List.map (fun (_,v) -> !v) !props in
+			let ret = List.filter (function | (_,_,None,None) -> false | _ -> true) ret in
+			ret, List.rev !nonprops
+		in
+
+		let fprops, fnonprops = partition cl cl.cl_ordered_fields in
+		let sprops, snonprops = partition cl cl.cl_ordered_statics in
+
+		(if is_some cl.cl_constructor then gen_class_field w false cl is_final (get cl.cl_constructor));
+		(if not cl.cl_interface then List.iter (gen_class_field w true cl is_final) snonprops);
+		List.iter (gen_class_field w false cl is_final) fnonprops;
+
+        (*TODO: need to generate properties from fprops and sprops here *)
+        
 		end_block w;
 		if should_close then end_block w;
 
 		(* add imports *)
-		List.iter (function
+		(*List.iter (function
 			| ["haxe";"root"], _ | [], _ -> ()
 			| path ->
 					write w_header "import ";
 					write w_header (path_s path []);
 					write w_header ";\n"
-		) !imports;
+		) !imports;*)
 		add_writer w w_header
 	in
-
 
 	let gen_enum w e =
 		let should_close = match change_ns (fst e.e_path) with
 			| [] -> false
 			| ns ->
-				print w "package %s;" (String.concat "." (change_ns ns));
+				(*print w "package %s;" (String.concat "." (change_ns ns));
 				newline w;
-				newline w;
+				newline w;*)
 				false
 		in
 
@@ -1224,9 +1288,9 @@ let generate con =
         let should_close = match change_ns (fst td.t_path) with
 			| [] -> false
 			| ns ->
-				print w "package %s;" (String.concat "." (change_ns ns));
+				(*print w "package %s;" (String.concat "." (change_ns ns));
 				newline w;
-				newline w;
+				newline w;*)
 				false
 		in
 
@@ -1355,7 +1419,7 @@ let generate con =
 
 	let mkdir dir = if not (Sys.file_exists dir) then Unix.mkdir dir 0o755 in
 	mkdir gen.gcon.file;
-	mkdir (gen.gcon.file ^ "/sources");
+	mkdir (gen.gcon.file ^ "/Sources");
 
 	let out_files = ref [] in
 
@@ -1364,7 +1428,7 @@ let generate con =
 	Hashtbl.iter (fun name v ->
 		res := { eexpr = TConst(TString name); etype = gen.gcon.basic.tstring; epos = null_pos } :: !res;
 		let name = Codegen.escape_res_name name true in
-		let full_path = gen.gcon.file ^ "/sources/" ^ name in
+		let full_path = gen.gcon.file ^ "/Sources/" ^ name in
 		mkdir_from_path full_path;
 
 		let f = open_out_bin full_path in
@@ -1386,7 +1450,7 @@ let generate con =
 	let parts = Str.split_delim (Str.regexp "[\\/]+") gen.gcon.file in
 	mkdir_recursive "" parts;
 
-	let source_dir = gen.gcon.file ^ "/sources" in
+	let source_dir = gen.gcon.file ^ "/Sources" in
 	List.iter (fun md ->
 		let w = SourceWriter.new_source_writer () in
 		let should_write = module_type_gen w md in
@@ -1397,7 +1461,7 @@ let generate con =
 	) gen.gtypes_list;
 
 	if not (Common.defined gen.gcon Define.KeepOldOutput) then
-		clean_files (gen.gcon.file ^ "/sources") !out_files gen.gcon.verbose;
+		clean_files (gen.gcon.file ^ "/Sources") !out_files gen.gcon.verbose;
     (*this next void return is necessary to compile when I comment out the block below.*)
     ()
 

@@ -20,17 +20,17 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-@:coreApi @:keep class Sys {
+@:coreApi class Sys {
 	private static var _args:swift.NativeArray<String>;
 	private static var _env:haxe.ds.StringMap<String>;
 	private static var _sysName:String;
 
-    @:functionCode('Swift.print(v, appendNewLine: false))')
+    @:functionCode('Swift.print(v, appendNewLine: false)')
 	public static function print( v : Dynamic ) : Void
 	{
 	}
 
-    @:functionCode('Swift.print(v, appendNewLine: true))')    
+    @:functionCode('Swift.print(v, appendNewLine: true)')    
 	public static function println( v : Dynamic ) : Void
 	{
 	}
