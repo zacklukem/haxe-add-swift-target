@@ -18,6 +18,7 @@
 /extra/deploy_key
 /extra/*_sec.gpg
 /extra/*_ssh
+/extra/haxelib_src
 
 /src/version.ml
 /haxe
