@@ -693,7 +693,7 @@ let generate con =
 						acc + 1
 					) 0 el);
 					write w ")"
-				| TNew (({ cl_path = (["swift"], "h") } as cl), params, [ size ]) ->
+				| TNew (({ cl_path = (["swift"], "NativeArray") } as cl), params, [ size ]) ->
 					let rec check_t_s t times =
 						match real_type t with
 							| TInst({ cl_path = (["swift"], "NativeArray") }, [param]) ->
@@ -1140,6 +1140,8 @@ let generate con =
 			| _ -> ()
 		) gen.gtypes_list;
 
+    newline w;
+    write w "import Foundation";
 		newline w;
 		write w "@objc";(*using this for reflection*)
 		newline w;
