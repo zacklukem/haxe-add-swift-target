@@ -159,7 +159,7 @@ let reserved = let res = Hashtbl.create 120 in
 	List.iter (fun lst -> Hashtbl.add res lst ("_" ^ lst)) ["abstract"; "assert"; "boolean"; "break"; "byte"; "case"; "catch"; "char"; "class";
 		"const"; "continue"; "default"; "do"; "double"; "else"; "enum"; "extends"; "final";
 		"false"; "finally"; "float"; "for"; "goto"; "if"; "implements"; "import"; "instanceof"; "int";
-		"interface"; "long"; "native"; "new"; "null"; "package"; "private"; "protected"; "public"; "return"; "short";
+		"interface"; "long"; "native"; "new"; "null"; "private"; "protected"; "public"; "return"; "short";
 		"static"; "strictfp"; "super"; "switch"; "synchronized"; "this"; "throw"; "throws"; "transient"; "true"; "try";
 		"void"; "volatile"; "while"; ];
 	res
@@ -246,7 +246,8 @@ let generate con =
 	in
 
 	let change_clname name =
-		String.map (function | '$' -> '.' | c -> c) name
+
+		"haxe_"^(String.map (function | '$' -> '.' | c -> c) name) (* NOTE here is where the mangling happens *)
 	in
 	let change_id name = try Hashtbl.find reserved name with | Not_found -> name in
 	let rec change_ns ns = match ns with
@@ -289,7 +290,8 @@ let generate con =
 
 	let path_s path meta =
         match path with
-			| (ns,clname) -> s_type_path (change_ns ns, change_clname clname)
+			| (ns,clname) -> change_clname clname
+			(* | (ns,clname) -> (s_type_path (change_ns ns, change_clname clname)) *)
 	in
 
 	(*let cl_cl = get_cl (get_type gen (["swift";"lang"],"Class")) in*)
@@ -594,7 +596,7 @@ let generate con =
 					write_id w var.v_name
 				| TField(_, FEnum(en,ef)) ->
 					let s = ef.ef_name in
-					print w "%s!." (path_s_import e.epos en.e_path en.e_meta); write_field w s
+					print w "%s." (path_s_import e.epos en.e_path en.e_meta); write_field w s (*FIXME Know if type is optional*)
 				| TArray (e1, e2) ->
 					expr_s w e1; write w "["; expr_s w e2; write w "]"
 				| TBinop ((Ast.OpAssign as op), e1, e2)
@@ -615,7 +617,8 @@ let generate con =
 				| TField (e, s) ->
                     let maybeExcl = function
                         | FStatic(_,_) -> "."
-                        | _ -> "!."
+                        | _ -> "."
+                        (* | _ -> "!." TODO check if optional *)
                     in
 					expr_s w e; write w (maybeExcl s); write_field w (field_name s)
 				| TTypeExpr (TClassDecl { cl_path = (["haxe"], "Int32") }) ->
@@ -690,7 +693,7 @@ let generate con =
 						acc + 1
 					) 0 el);
 					write w ")"
-				| TNew (({ cl_path = (["swift"], "NativeArray") } as cl), params, [ size ]) ->
+				| TNew (({ cl_path = (["swift"], "h") } as cl), params, [ size ]) ->
 					let rec check_t_s t times =
 						match real_type t with
 							| TInst({ cl_path = (["swift"], "NativeArray") }, [param]) ->
@@ -702,10 +705,10 @@ let generate con =
 									if i <= 0 then () else (write w "[]"; loop (i-1))
 								in
 								loop (times - 1);
-                write w "(repeating: ";
-                print w "%s" (t_s e.epos t);
+                (* write w ""; *)
+                (* print w "%s" (t_s e.epos t); *)
                 (* FIXME need real Object of type for repeating see FieldLookup.swift line 40 in examples *)
-                write w "(), count: ";
+                write w "(repeating: nil, count: ";
                 expr_s w size;
       					write w ")"
 					in
@@ -1145,7 +1148,7 @@ let generate con =
 		let clt, access, modifiers = get_class_modifiers cl.cl_meta (if cl.cl_interface then "interface" else "class") "" [] in
 		let is_final = Meta.has Meta.Final cl.cl_meta in
 
-		write_parts w ("" :: modifiers @ [clt; (change_clname (snd cl.cl_path))]);
+		write_parts w ("" :: modifiers @ [clt; (change_clname (snd cl.cl_path))]); (* MARKER class name *)
 
 		(* type parameters *)
 		let params, _ = get_string_params cl.cl_params in
@@ -1212,7 +1215,7 @@ let generate con =
 		let should_close = match change_ns (fst e.e_path) with
 			| [] -> false
 			| ns ->
-				print w "package %s;" (String.concat "." (change_ns ns));
+				(* print w "package %s;" (String.concat "." (change_ns ns)); *)
 				newline w;
 				newline w;
 				false
@@ -1231,7 +1234,7 @@ let generate con =
         let should_close = match change_ns (fst td.t_path) with
 			| [] -> false
 			| ns ->
-				print w "package %s;" (String.concat "." (change_ns ns));
+				(* print w "package %s;" (String.concat "." (change_ns ns)); *)
 				newline w;
 				newline w;
 				false
