@@ -84,7 +84,8 @@
 		return "";
 	}
 
-	public static function escape( s : String ) : String {
-		return null;
-	}
+    public static inline function escape( s : String ) : String 
+    {
+        return "";
+    }
 }

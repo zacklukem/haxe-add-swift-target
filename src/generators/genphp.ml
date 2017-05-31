@@ -344,8 +344,7 @@ let s_ident_local n =
 	| _ -> n
 
 let create_directory com ldir =
- 	let atm_path = ref (String.create 0) in
- 	atm_path := com.file;
+ 	let atm_path = ref com.file in
  	if not (Sys.file_exists com.file) then (Unix.mkdir com.file 0o755);
  	(List.iter (fun p -> atm_path := !atm_path ^ "/" ^ p; if not (Sys.file_exists !atm_path) then (Unix.mkdir !atm_path 0o755);) ldir)
 
@@ -833,7 +832,7 @@ and gen_member_access ctx isvar e s =
 	| _ -> print ctx "->%s" (if isvar then s_ident_field s else s_ident s)
 
 and gen_field_access ctx isvar e s =
-	match e.eexpr with
+	match (reveal_expr e).eexpr with
 	| TTypeExpr t ->
 		let isglobal = match t with
 		| TClassDecl(c) -> Meta.has Meta.PhpGlobal c.cl_meta && c.cl_extern

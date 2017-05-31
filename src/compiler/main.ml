@@ -252,7 +252,7 @@ module Initialize = struct
 					add_std "php";
 				"php"
 			| Cpp ->
-				Common.define_value com Define.HxcppApiLevel "331";
+				Common.define_value com Define.HxcppApiLevel "332";
 				add_std "cpp";
 				if Common.defined com Define.Cppia then
 					classes := (Path.parse_path "cpp.cppia.HostClasses" ) :: !classes;
@@ -289,6 +289,9 @@ module Initialize = struct
 			| Hl ->
 				add_std "hl";
 				"hl"
+			| Eval ->
+				add_std "eval";
+				"eval"
 end
 
 let generate tctx ext xml_out interp swf_header =
@@ -305,7 +308,7 @@ let generate tctx ext xml_out interp swf_header =
 			| Some(_,ctx) -> print_endline "generate"; Codegen.Dump.dump_dependencies ~target_override:(Some "macro") ctx.Typecore.com
 	end;
 	begin match com.platform with
-		| Neko | Hl when interp -> ()
+		| Neko | Hl | Eval when interp -> ()
 		| Cpp when Common.defined com Define.Cppia -> ()
 		| Cpp | Cs | Java | Php -> Common.mkdir_from_path (com.file ^ "/.")
 		| _ -> Common.mkdir_from_path com.file
@@ -343,6 +346,8 @@ let generate tctx ext xml_out interp swf_header =
 			Genpy.generate,"python"
 		| Hl ->
 			Genhl.generate,"hl"
+		| Eval ->
+			(fun _ -> MacroContext.interpret tctx),"eval"
 		| Cross ->
 			assert false
 		in
