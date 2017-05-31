@@ -78,7 +78,7 @@ let macro_timer ctx l =
 
 let typing_timer ctx need_type f =
 	let t = Common.timer ["typing"] in
-	let old = ctx.com.error and oldp = ctx.pass and oldlocals = ctx.locals in
+	let old = ctx.com.error and oldp = ctx.pass in
 	(*
 		disable resumable errors... unless we are in display mode (we want to reach point of completion)
 	*)
@@ -89,7 +89,6 @@ let typing_timer ctx need_type f =
 		t();
 		ctx.com.error <- old;
 		ctx.pass <- oldp;
-		ctx.locals <- oldlocals;
 	in
 	try
 		let r = f() in
@@ -391,7 +390,7 @@ and flush_macro_context mint ctx =
 	(* if one of the type we are using has been modified, we need to create a new macro context from scratch *)
 	let mint = if not (Interp.can_reuse mint types && check_reuse()) then begin
 		let com2 = mctx.com in
-		let mint = Interp.create com2 (make_macro_api ctx Globals.null_pos) true in
+		let mint = Interp.create com2 (make_macro_api ctx Globals.null_pos) in
 		let macro = ((fun() -> Interp.select mint), mctx) in
 		ctx.g.macros <- Some macro;
 		mctx.g.macros <- Some macro;
@@ -432,8 +431,7 @@ let create_macro_interp ctx mctx =
 	let com2 = mctx.com in
 	let mint, init = (match !macro_interp_cache with
 		| None ->
-			let mint = Interp.create com2 (make_macro_api ctx null_pos) true in
-			Interp.select mint;
+			let mint = Interp.create com2 (make_macro_api ctx null_pos) in
 			mint, (fun() -> init_macro_interp ctx mctx mint)
 		| Some mint ->
 			macro_interp_reused := false;
@@ -505,7 +503,9 @@ let load_macro ctx display cpath f p =
 		let mt = Typeload.load_type_def mctx p { tpackage = fst cpath; tname = snd cpath; tparams = []; tsub = sub } in
 		let cl, meth = (match mt with
 			| TClassDecl c ->
+				let t = macro_timer ctx ["finalize"] in
 				mctx.g.do_finalize mctx;
+				t();
 				c, (try PMap.find f c.cl_statics with Not_found -> error ("Method " ^ f ^ " not found on class " ^ s_type_path cpath) p)
 			| _ -> error "Macro should be called on a class" p
 		) in
@@ -755,7 +755,7 @@ let call_init_macro ctx e =
 		error "Invalid macro call" p
 
 let interpret ctx =
-	let mctx = Interp.create ctx.com (make_macro_api ctx null_pos) false in
+	let mctx = Interp.create ctx.com (make_macro_api ctx null_pos) in
 	Interp.add_types mctx ctx.com.types (fun t -> ());
 	match ctx.com.main with
 	| None -> ()

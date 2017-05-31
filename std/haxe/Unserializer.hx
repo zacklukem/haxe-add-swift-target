@@ -189,7 +189,7 @@ class Unserializer {
  				throw "Invalid object";
  			if( get(pos) == "g".code )
  				break;
- 			var k : Dynamic = unserialize();
+ 			var k = unserialize();
  			if( !Std.is(k,String) )
  				throw "Invalid object key";
  			var v = unserialize();

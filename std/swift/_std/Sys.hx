@@ -20,22 +20,26 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+//import swift.lang.System;
+///import sys.io.Process;
+//using haxe.Int64;
+
 @:coreApi class Sys {
 	private static var _args:swift.NativeArray<String>;
 	private static var _env:haxe.ds.StringMap<String>;
 	private static var _sysName:String;
 
-    @:functionCode('Swift.print(v, appendNewLine: false)')
-	public static function print( v : Dynamic ) : Void
+    @:functionCode('Swift.print(v, appendNewLine: false))')
+	public static inline function print( v : Dynamic ) : Void
 	{
 	}
 
-    @:functionCode('Swift.print(v, appendNewLine: true)')    
-	public static function println( v : Dynamic ) : Void
+    @:functionCode('Swift.print(v, appendNewLine: true))')    
+	public static inline function println( v : Dynamic ) : Void
 	{
 	}
 
-    @:functionCode('
+    @functionCode('
             if (CommandLine.arguments == nil)
 			    return [String]()
             else 
@@ -46,7 +50,7 @@
         return null;
 	}
 
-    @:functionCode('
+    @functionCode('
             	guard let rawValue = getenv(s) else { return nil }
                 return String(utf8String: rawValue)
             ')
@@ -55,7 +59,7 @@
 	    return null;
 	}
 
-    @:functionCode('
+    @functionCode('
                 if (s != nil && v != nil) 
                 {
                     setenv(s, v, 1/*overwrite*/)

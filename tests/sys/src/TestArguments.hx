@@ -64,9 +64,7 @@ class TestArguments extends haxe.unit.TestCase {
 	});
 
 	static public var bin:String =
-	#if interp
-		"TestArguments.hx";
-	#elseif neko
+	#if neko
 		"bin/neko/TestArguments.n";
 	#elseif hl
 		"bin/hl/TestArguments.hl";

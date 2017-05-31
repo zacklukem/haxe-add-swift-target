@@ -330,7 +330,7 @@ let rec punion_el el = match el with
 
 let parse_path s =
 	match List.rev (ExtString.String.nsplit s ".") with
-	| [] -> [],"" (* This is how old extlib behaved. *)
+	| [] -> failwith "Invalid empty path"
 	| x :: l -> List.rev l, x
 
 let s_escape ?(hex=true) s =

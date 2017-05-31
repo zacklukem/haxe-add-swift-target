@@ -240,10 +240,10 @@ let get_to_string ctx p =
 
 let set_i32 b p v =
 	try
-		Bytes.set (Bytes.unsafe_of_string b) p (char_of_int ((Int32.to_int v) land 0xFF));
-		Bytes.set (Bytes.unsafe_of_string b) (p+1) (char_of_int ((Int32.to_int (Int32.shift_right_logical v 8)) land 0xFF));
-		Bytes.set (Bytes.unsafe_of_string b) (p+2) (char_of_int ((Int32.to_int (Int32.shift_right_logical v 16)) land 0xFF));
-		Bytes.set (Bytes.unsafe_of_string b) (p+3) (char_of_int (Int32.to_int (Int32.shift_right_logical v 24)));
+		String.set b p (char_of_int ((Int32.to_int v) land 0xFF));
+		String.set b (p+1) (char_of_int ((Int32.to_int (Int32.shift_right_logical v 8)) land 0xFF));
+		String.set b (p+2) (char_of_int ((Int32.to_int (Int32.shift_right_logical v 16)) land 0xFF));
+		String.set b (p+3) (char_of_int (Int32.to_int (Int32.shift_right_logical v 24)));
 	with _ ->
 		error "Set outside of bytes bounds"
 
@@ -883,8 +883,6 @@ let interp ctx f args =
 		| OJSLte (a,b,i) -> if vcompare a b (<=) then pos := !pos + i
 		| OJULt (a,b,i) -> if ucompare (get a) (get b) < 0 then pos := !pos + i
 		| OJUGte (a,b,i) -> if ucompare (get a) (get b) >= 0 then pos := !pos + i
-		| OJNotLt (a,b,i) -> if not (vcompare a b (<)) then pos := !pos + i
-		| OJNotGte (a,b,i) -> if not (vcompare a b (>=)) then pos := !pos + i
 		| OJEq (a,b,i) -> if vcompare a b (=) then pos := !pos + i
 		| OJNotEq (a,b,i) -> if not (vcompare a b (=)) then pos := !pos + i
 		| OJAlways i -> pos := !pos + i
@@ -1016,13 +1014,13 @@ let interp ctx f args =
 			| _ -> assert false);
 		| OSetUI8 (r,p,v) ->
 			(match get r, get p, get v with
-			| VBytes b, VInt p, VInt v -> Bytes.set (Bytes.unsafe_of_string b) (Int32.to_int p) (char_of_int ((Int32.to_int v) land 0xFF))
+			| VBytes b, VInt p, VInt v -> String.set b (Int32.to_int p) (char_of_int ((Int32.to_int v) land 0xFF))
 			| _ -> assert false)
 		| OSetUI16 (r,p,v) ->
 			(match get r, get p, get v with
 			| VBytes b, VInt p, VInt v ->
-				Bytes.set (Bytes.unsafe_of_string b) (Int32.to_int p) (char_of_int ((Int32.to_int v) land 0xFF));
-				Bytes.set (Bytes.unsafe_of_string b) (Int32.to_int p + 1) (char_of_int (((Int32.to_int v) lsr 8) land 0xFF))
+				String.set b (Int32.to_int p) (char_of_int ((Int32.to_int v) land 0xFF));
+				String.set b (Int32.to_int p + 1) (char_of_int (((Int32.to_int v) lsr 8) land 0xFF))
 			| _ -> assert false)
 		| OSetMem (r,p,v) ->
 			(match get r, get p with
@@ -1236,7 +1234,7 @@ let load_native ctx lib name t =
 		(match name with
 		| "alloc_bytes" ->
 			(function
-			| [VInt i] -> VBytes (Bytes.unsafe_to_string (Bytes.create (int i)))
+			| [VInt i] -> VBytes (String.create (int i))
 			| _ -> assert false)
 		| "alloc_array" ->
 			(function
@@ -1267,7 +1265,7 @@ let load_native ctx lib name t =
 		| "bytes_blit" ->
 			(function
 			| [VBytes dst; VInt dp; VBytes src; VInt sp; VInt len] ->
-				String.blit src (int sp) (Bytes.unsafe_of_string dst) (int dp) (int len);
+				String.blit src (int sp) dst (int dp) (int len);
 				VUndef
 			| [(VBytes _ | VNull); VInt _; (VBytes _ | VNull); VInt _; VInt len] ->
 				if len = 0l then VUndef else error "bytes_blit to NULL bytes";
@@ -1867,14 +1865,10 @@ let load_native ctx lib name t =
 			(function
 			| [VBytes a; VInt apos; VBytes b; VInt bpos; VInt len] -> to_int (String.compare (String.sub a (int apos) (int len)) (String.sub b (int bpos) (int len)))
 			| _ -> assert false)
-		| "string_compare" ->
-			(function
-			| [VBytes a; VBytes b; VInt len] -> to_int (String.compare (String.sub a 0 ((int len) * 2)) (String.sub b 0 ((int len)*2)))
-			| _ -> assert false)
 		| "bytes_fill" ->
 			(function
 			| [VBytes a; VInt pos; VInt len; VInt v] ->
-				Bytes.fill (Bytes.unsafe_of_string a) (int pos) (int len) (char_of_int ((int v) land 0xFF));
+				String.fill a (int pos) (int len) (char_of_int ((int v) land 0xFF));
 				VUndef
 			| _ -> assert false)
 		| "exception_stack" ->
@@ -2287,7 +2281,7 @@ let check code macros =
 			| OJNull (r,delta) | OJNotNull (r,delta) ->
 				ignore(rtype r);
 				can_jump delta
-			| OJUGte (a,b,delta) | OJULt (a,b,delta) | OJSGte (a,b,delta) | OJSLt (a,b,delta) | OJSGt (a,b,delta) | OJSLte (a,b,delta) | OJNotLt (a,b,delta) | OJNotGte (a,b,delta) ->
+			| OJUGte (a,b,delta) | OJULt (a,b,delta) | OJSGte (a,b,delta) | OJSLt (a,b,delta) | OJSGt (a,b,delta) | OJSLte (a,b,delta) ->
 				if not (safe_cast (rtype a) (rtype b)) then reg b (rtype a);
 				can_jump delta
 			| OJEq (a,b,delta) | OJNotEq (a,b,delta) ->
@@ -2787,10 +2781,8 @@ let make_spec (code:code) (f:fundecl) =
 			| OJSGte (a,b,_) -> semit (SJComp (">=",args.(a),args.(b)))
 			| OJSGt (a,b,_) -> semit (SJComp (">",args.(a),args.(b)))
 			| OJSLte (a,b,_) -> semit (SJComp ("<=",args.(a),args.(b)))
-			| OJULt (a,b,_) -> semit (SJComp ("<U",args.(a),args.(b)))
-			| OJUGte (a,b,_) -> semit (SJComp (">=U",args.(a),args.(b)))
-			| OJNotLt (a,b,_) -> semit (SJComp ("not<",args.(a),args.(b)))
-			| OJNotGte (a,b,_) -> semit (SJComp ("not>=",args.(a),args.(b)))
+			| OJULt (a,b,_) -> semit (SJComp ("<!",args.(a),args.(b)))
+			| OJUGte (a,b,_) -> semit (SJComp (">=!",args.(a),args.(b)))
 			| OJEq (a,b,_) -> semit (SJComp ("==",args.(a),args.(b)))
 			| OJNotEq (a,b,_) -> semit (SJComp ("!=",args.(a),args.(b)))
 			| OJAlways _ -> semit SJump

@@ -77,7 +77,6 @@ tests/sys/bin/
 /tests/sys/dump/
 tests/optimization/dump/
 tests/misc/projects/*/*.n
-tests/misc/*/*/*.lua
 tests/unit/bin/
 tests/*.n
 tests/misc/projects/Issue3756/cpp/
@@ -102,6 +101,3 @@ Makefile.modules
 /tests/unit/compiler_loops/All.n
 
 /tests/unit/compiler_loops/log.txt
-tests/benchs/mandelbrot/bin/
-tests/server/test/cases/
-tests/server/test.js

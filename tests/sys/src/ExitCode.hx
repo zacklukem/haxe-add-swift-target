@@ -3,13 +3,11 @@ import sys.io.*;
 import haxe.io.*;
 
 /**
-	This is intended to be used by TestSys and io.TestProcess.
+	This is intented to be used by TestSys and io.TestProcess.
 */
 class ExitCode {
 	static public var bin:String =
-	#if interp
-		"bin/interp/ExitCode";
-	#elseif neko
+	#if neko
 		"bin/neko/ExitCode.n";
 	#elseif hl
 		"bin/hl/ExitCode.hl";

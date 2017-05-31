@@ -90,11 +90,7 @@ import lua.Boot;
 	}
 
 	public static function fields( o : Dynamic ) : Array<String> {
-		if (lua.Lua.type(o) == "string"){
-			return Reflect.fields(untyped String.prototype);
-		} else {
-			return [for (f in lua.Boot.fieldIterator(o)) f];
-		}
+		return [for (f in lua.Boot.fieldIterator(o)) f];
 	}
 
 	public static function isFunction( f : Dynamic ) : Bool {

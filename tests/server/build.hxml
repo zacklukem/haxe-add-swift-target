@@ -1,5 +1,0 @@
--cp src
--main Main
--js test.js
--lib hxnodejs
--lib utest
